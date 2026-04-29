@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>工时报表</title>
+  <script src="https://p.trellocdn.com/power-up.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:       #0e1822;
+      --surface:  #162030;
+      --surface2: #1c2a3e;
+      --border:   #253448;
+      --navy:     #1B2E4B;
+      --orange:   #E8943A;
+      --brown:    #8B5E3C;
+      --cream:    #F5ECD7;
+      --text:     #EEE8DC;
+      --muted:    #7A8FA6;
+      --mono: 'Space Mono', monospace;
+      --sans: 'Noto Sans SC', sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: var(--sans); padding: 14px; font-size: 13px; }
+
+    .label { font-size: 10px; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); margin-bottom: 5px; font-family: var(--mono); }
+
+    /* Brand strip */
+    .xin-strip { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+    .xin-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .xin-name { font-family: var(--mono); font-size: 10px; letter-spacing: .15em; color: var(--muted); text-transform: uppercase; }
+    .xin-line { flex:1; height: 1px; background: var(--border); }
+
+    /* Tabs */
+    .tabs { display: flex; gap: 4px; margin-bottom: 12px; background: var(--surface); padding: 3px; border-radius: 8px; }
+    .tab { flex:1; padding: 7px; border: none; border-radius: 6px; background: transparent; color: var(--muted); font-family: var(--sans); font-size: 12px; cursor: pointer; transition: all .15s; }
+    .tab.active { background: var(--orange); color: #fff; font-weight: 700; }
+
+    /* Filters */
+    .filters { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+    .filter-group { display: flex; flex-direction: column; }
+    select, input[type="date"] { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 7px 10px; color: var(--text); font-family: var(--sans); font-size: 12px; outline: none; width: 100%; }
+    select:focus, input[type="date"]:focus { border-color: var(--orange); }
+    input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.5); cursor: pointer; }
+
+    /* Query button */
+    .btn-query { width: 100%; padding: 9px; background: var(--orange); color: #fff; border: none; border-radius: 8px; font-weight: 700; font-family: var(--sans); font-size: 13px; cursor: pointer; margin-bottom: 12px; transition: all .15s; }
+    .btn-query:hover { filter: brightness(1.1); box-shadow: 0 4px 14px rgba(232,148,58,.3); }
+
+    /* Summary */
+    .summary-bar { display: flex; gap: 8px; margin-bottom: 12px; }
+    .summary-card { flex:1; background: var(--navy); border-radius: 8px; padding: 10px; text-align: center; position: relative; overflow: hidden; }
+    .summary-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background: var(--orange); }
+    .summary-card.s2::before { background: var(--brown); }
+    .summary-card.s3::before { background: #5a7fa0; }
+    .summary-val { font-family: var(--mono); font-size: 20px; font-weight: 700; color: var(--cream); line-height: 1; }
+    .summary-lbl { font-size: 10px; color: var(--muted); margin-top: 4px; }
+
+    /* Results */
+    .results-scroll { max-height: 210px; overflow-y: auto; }
+    .results-scroll::-webkit-scrollbar { width: 3px; }
+    .results-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    table { width: 100%; border-collapse: collapse; }
+    th { font-family: var(--mono); font-size: 9px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); text-align: left; padding: 0 8px 7px; border-bottom: 1px solid var(--border); }
+    td { padding: 8px; border-bottom: 1px solid var(--border); font-size: 12px; vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+
+    .td-name { font-weight: 700; color: var(--cream); }
+    .td-sub { color: var(--muted); font-size: 11px; max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .td-hours { font-family: var(--mono); font-weight: 700; color: var(--orange); text-align: right; }
+    .td-count { font-family: var(--mono); font-size: 11px; color: var(--muted); text-align: right; }
+
+    /* Donut chart */
+    .chart-wrap { display: flex; align-items: center; gap: 14px; padding: 10px 0 4px; }
+    .donut-svg { flex-shrink: 0; }
+    .legend { display: flex; flex-direction: column; gap: 6px; }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .legend-label { color: var(--muted); }
+    .legend-val { font-family: var(--mono); font-size: 11px; color: var(--cream); margin-left: auto; padding-left: 8px; }
+
+    .empty-state { text-align: center; color: var(--muted); padding: 24px; font-size: 12px; }
+
+    /* Detail */
+    .detail-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid var(--border); transition: background .15s; }
+    .detail-item:hover { background: var(--surface2); }
+    .detail-item:last-child { border-bottom: none; }
+    .detail-left { flex:1; }
+    .detail-name { font-weight: 700; font-size: 12px; color: var(--cream); }
+    .detail-project { font-size: 10px; color: var(--muted); }
+    .detail-time { font-size: 10px; color: var(--muted); font-family: var(--mono); }
+    .detail-dur { font-family: var(--mono); font-size: 12px; color: var(--orange); font-weight: 700; }
+    .badge-manual { font-size: 9px; background: rgba(90,127,160,.2); color: #7aadcc; padding: 1px 5px; border-radius: 3px; margin-left: 4px; font-family: var(--mono); }
+
+    .demo-banner { background: rgba(139,94,60,.15); border: 1px solid var(--brown); border-radius: 6px; padding: 6px 12px; margin-bottom: 10px; font-size: 11px; color: var(--brown); text-align: center; }
+  </style>
+</head>
+<body>
+
+  <div class="xin-strip">
+    <div class="xin-dot" style="background:var(--orange)"></div>
+    <div class="xin-dot" style="background:var(--navy);border:1px solid #2a4060"></div>
+    <div class="xin-dot" style="background:var(--brown)"></div>
+    <span class="xin-name">XIN Studio · 工时报表</span>
+    <div class="xin-line"></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" id="tab-person"  onclick="switchTab('person')">按人员</button>
+    <button class="tab"        id="tab-project" onclick="switchTab('project')">按项目</button>
+    <button class="tab"        id="tab-detail"  onclick="switchTab('detail')">明细</button>
+  </div>
+
+  <div class="filters">
+    <div class="filter-group"><div class="label">开始日期</div><input type="date" id="dateFrom"></div>
+    <div class="filter-group"><div class="label">结束日期</div><input type="date" id="dateTo"></div>
+    <div class="filter-group"><div class="label">人员筛选</div><select id="filterPerson"><option value="">所有人</option></select></div>
+    <div class="filter-group"><div class="label">项目筛选</div><select id="filterProject"><option value="">所有项目</option></select></div>
+  </div>
+
+  <button class="btn-query" onclick="query()">查询工时</button>
+
+  <div class="summary-bar">
+    <div class="summary-card">    <div class="summary-val" id="sumHours">--</div><div class="summary-lbl">总工时(h)</div></div>
+    <div class="summary-card s2"> <div class="summary-val" id="sumPeople">--</div><div class="summary-lbl">人员数</div></div>
+    <div class="summary-card s3"> <div class="summary-val" id="sumSessions">--</div><div class="summary-lbl">打卡次数</div></div>
+  </div>
+
+  <div class="results-scroll" id="resultsArea"><div class="empty-state">选择日期范围后点击查询</div></div>
+
+<script>
+  var STORAGE_KEY    = 'timetracker_records_v2';
+  var currentTab     = 'person';
+  var currentResults = [];
+  var allRecords     = [];
+  var trelloInstance = null;
+  var standaloneMode = false;
+
+  // Palette for donut chart
+  var COLORS = ['#E8943A','#8B5E3C','#5a7fa0','#c4a35a','#7a8fa6','#3a6e8b','#a07050','#4a9e7a'];
+
+  function isTrelloAvailable(){ return typeof TrelloPowerUp !== 'undefined'; }
+  function localGet(k){ try{var v=localStorage.getItem(k);return v?JSON.parse(v):[];}catch(e){return[];} }
+  function localSet(k,v){ try{localStorage.setItem(k,JSON.stringify(v));}catch(e){} }
+
+  async function loadRecords(){
+    if(standaloneMode) return localGet(STORAGE_KEY);
+    try{return(await trelloInstance.get('board','shared',STORAGE_KEY))||[];}catch(e){return[];}
+  }
+
+  async function init(){
+    // Default: this week
+    var now=new Date(), dow=now.getDay();
+    var mon=new Date(now); mon.setDate(now.getDate()-(dow===0?6:dow-1));
+    document.getElementById('dateFrom').value=mon.toISOString().slice(0,10);
+    document.getElementById('dateTo').value=now.toISOString().slice(0,10);
+
+    if(!isTrelloAvailable()){
+      standaloneMode=true;
+      var b=document.createElement('div'); b.className='demo-banner';
+      b.textContent='预览模式（未在 Trello 内加载）— 显示本地示例数据';
+      document.body.insertBefore(b,document.body.firstChild);
+      if(localGet(STORAGE_KEY).length===0){
+        var base=Date.now();
+        localSet(STORAGE_KEY,[
+          {id:'d1',cardId:'c1',cardName:'网站改版',userName:'小明',clockIn:base-172800000,clockOut:base-172800000+7200000},
+          {id:'d2',cardId:'c1',cardName:'网站改版',userName:'小红',clockIn:base-172800000,clockOut:base-172800000+5400000},
+          {id:'d3',cardId:'c2',cardName:'APP开发', userName:'小明',clockIn:base-86400000, clockOut:base-86400000+9000000},
+          {id:'d4',cardId:'c2',cardName:'APP开发', userName:'小李',clockIn:base-86400000, clockOut:base-86400000+3600000},
+          {id:'d5',cardId:'c1',cardName:'网站改版',userName:'小明',clockIn:base-3600000,  clockOut:base-1800000,manual:true},
+          {id:'d6',cardId:'c3',cardName:'后端API', userName:'小李',clockIn:base-50000000, clockOut:base-50000000+14400000},
+        ]);
+      }
+    } else {
+      trelloInstance=TrelloPowerUp.iframe();
+    }
+
+    allRecords=(await loadRecords()).filter(function(r){return r.clockOut;});
+
+    var people  =Array.from(new Set(allRecords.map(function(r){return r.userName;}))).sort();
+    var projects=Array.from(new Set(allRecords.map(function(r){return r.cardName;}))).sort();
+    var ps=document.getElementById('filterPerson'), pr=document.getElementById('filterProject');
+    people.forEach(function(p){var o=document.createElement('option');o.value=p;o.textContent=p;ps.appendChild(o);});
+    projects.forEach(function(p){var o=document.createElement('option');o.value=p;o.textContent=p;pr.appendChild(o);});
+
+    query();
+  }
+
+  function getFiltered(){
+    var fv=document.getElementById('dateFrom').value, tv=document.getElementById('dateTo').value;
+    var person=document.getElementById('filterPerson').value, project=document.getElementById('filterProject').value;
+    if(!fv||!tv) return allRecords;
+    var from=new Date(fv), to=new Date(tv); to.setHours(23,59,59,999);
+    return allRecords.filter(function(r){
+      var d=new Date(r.clockIn);
+      if(d<from||d>to) return false;
+      if(person&&r.userName!==person) return false;
+      if(project&&r.cardName!==project) return false;
+      return true;
+    });
+  }
+
+  function query(){
+    currentResults=getFiltered();
+    var totalMs=currentResults.reduce(function(s,r){return s+(r.clockOut-r.clockIn);},0);
+    document.getElementById('sumHours').textContent=(totalMs/3600000).toFixed(1);
+    document.getElementById('sumPeople').textContent=new Set(currentResults.map(function(r){return r.userName;})).size;
+    document.getElementById('sumSessions').textContent=currentResults.length;
+    renderTab();
+  }
+
+  function switchTab(tab){
+    currentTab=tab;
+    ['person','project','detail'].forEach(function(n){
+      document.getElementById('tab-'+n).classList.toggle('active',n===tab);
+    });
+    renderTab();
+  }
+
+  function renderTab(){
+    if(currentTab==='person')  renderGroup(function(r){return r.userName;}, '人员','参与项目',function(recs){return Array.from(new Set(recs.map(function(r){return r.cardName;}))).join(', ');});
+    else if(currentTab==='project') renderGroup(function(r){return r.cardName;},'项目','参与人员',function(recs){return Array.from(new Set(recs.map(function(r){return r.userName;}))).join(', ');});
+    else renderDetail();
+  }
+
+  function renderGroup(keyFn, col1, col2, subFn){
+    if(!currentResults.length){ document.getElementById('resultsArea').innerHTML='<div class="empty-state">该筛选条件下无数据</div>'; return; }
+
+    var grouped=groupBy(currentResults,keyFn);
+    var rows=Object.entries(grouped).map(function(e){
+      return{label:e[0],sub:subFn(e[1]),ms:e[1].reduce(function(s,r){return s+(r.clockOut-r.clockIn);},0),count:e[1].length};
+    }).sort(function(a,b){return b.ms-a.ms;});
+
+    var totalMs=rows.reduce(function(s,r){return s+r.ms;},0);
+
+    // Donut
+    var donut=buildDonut(rows,totalMs);
+
+    var tableRows=rows.map(function(r,i){
+      return '<tr><td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+COLORS[i%COLORS.length]+';margin-right:6px;vertical-align:middle"></span><span class="td-name">'+esc(r.label)+'</span></td>'
+        +'<td class="td-sub" title="'+esc(r.sub)+'">'+esc(r.sub)+'</td>'
+        +'<td class="td-hours">'+(r.ms/3600000).toFixed(1)+'h</td>'
+        +'<td class="td-count">'+r.count+'</td></tr>';
+    }).join('');
+
+    document.getElementById('resultsArea').innerHTML=
+      donut+
+      '<table style="margin-top:10px"><thead><tr><th>'+col1+'</th><th>'+col2+'</th><th style="text-align:right">工时</th><th style="text-align:right">次数</th></tr></thead><tbody>'+tableRows+'</tbody></table>';
+  }
+
+  function buildDonut(rows,totalMs){
+    var size=80, cx=40, cy=40, r=30, innerR=18;
+    var circumference=2*Math.PI*r;
+    var offset=0;
+    var segments='';
+    var legendItems='';
+
+    rows.forEach(function(row,i){
+      var pct=totalMs>0?row.ms/totalMs:0;
+      var dashLen=pct*circumference;
+      var color=COLORS[i%COLORS.length];
+      var rotDeg=(offset/circumference)*360-90;
+      segments+='<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="'+color+'" stroke-width="12" stroke-dasharray="'+dashLen+' '+(circumference-dashLen)+'" stroke-dashoffset="0" transform="rotate('+rotDeg+' '+cx+' '+cy+')" />';
+      offset+=dashLen;
+      var h=(row.ms/3600000).toFixed(1);
+      legendItems+='<div class="legend-item"><div class="legend-dot" style="background:'+color+'"></div><span class="legend-label">'+esc(row.label)+'</span><span class="legend-val">'+h+'h</span></div>';
+    });
+
+    var svg='<svg class="donut-svg" width="'+size+'" height="'+size+'" viewBox="0 0 '+size+' '+size+'">'
+      +'<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="#253448" stroke-width="12"/>'
+      +segments
+      +'<text x="'+cx+'" y="'+(cy+4)+'" text-anchor="middle" fill="#EEE8DC" font-size="9" font-family="Space Mono">'+(totalMs/3600000).toFixed(0)+'h</text>'
+      +'</svg>';
+
+    return '<div class="chart-wrap">'+svg+'<div class="legend">'+legendItems+'</div></div>';
+  }
+
+  function renderDetail(){
+    if(!currentResults.length){ document.getElementById('resultsArea').innerHTML='<div class="empty-state">该筛选条件下无数据</div>'; return; }
+    var sorted=currentResults.slice().sort(function(a,b){return b.clockIn-a.clockIn;});
+    document.getElementById('resultsArea').innerHTML=sorted.map(function(r){
+      var tag=r.manual?'<span class="badge-manual">补卡</span>':'';
+      return '<div class="detail-item"><div class="detail-left"><div class="detail-name">'+esc(r.userName)+tag+'</div><div class="detail-project">📋 '+esc(r.cardName)+'</div><div class="detail-time">'+fmtDate(r.clockIn)+'  '+fmtTime(r.clockIn)+' → '+fmtTime(r.clockOut)+'</div></div><div class="detail-dur">'+fmtDur(r.clockOut-r.clockIn)+'</div></div>';
+    }).join('');
+  }
+
+  function groupBy(arr,fn){ return arr.reduce(function(acc,item){var k=fn(item);if(!acc[k])acc[k]=[];acc[k].push(item);return acc;},{}); }
+  function fmtTime(ts){return new Date(ts).toTimeString().slice(0,5);}
+  function fmtDate(ts){return new Date(ts).toLocaleDateString('zh-CN',{month:'numeric',day:'numeric'});}
+  function fmtDur(ms){var m=Math.floor(ms/60000),h=Math.floor(m/60);return h>0?h+'h'+(m%60)+'m':m+'m';}
+  function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+  init();
+</script>
+</body>
+</html>

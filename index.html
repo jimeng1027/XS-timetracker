@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>Time Tracker Power-Up</title>
+  <script src="https://p.trellocdn.com/power-up.min.js"></script>
+  <style>
+    body { margin: 0; font-family: sans-serif; background: #0052cc; color: white; display: flex; align-items: center; justify-content: center; height: 100vh; }
+    p { font-size: 14px; opacity: 0.8; }
+  </style>
+</head>
+<body>
+  <p>Time Tracker Power-Up 已加载 ✓</p>
+  <script>
+    // ============================================================
+    // STORAGE KEY PREFIX
+    // ============================================================
+    const STORAGE_KEY = 'timetracker_records';
+
+    // ============================================================
+    // TRELLO POWER-UP INITIALIZATION
+    // ============================================================
+    TrelloPowerUp.initialize({
+
+      // --- 卡片右侧按钮 ---
+      'card-buttons': function(t, options) {
+        return [{
+          icon: 'https://cdn-icons-png.flaticon.com/512/833/833451.png',
+          text: '打卡记录',
+          callback: function(t) {
+            return t.popup({
+              title: '⏱ 工时打卡',
+              url: './card-button.html',
+              height: 440,
+            });
+          }
+        }];
+      },
+
+      // --- 卡片徽章：显示今日已打卡状态 ---
+      'card-badges': function(t, options) {
+        return t.get('card', 'shared', STORAGE_KEY, []).then(function(records) {
+          const cardId = t.getContext().card;
+          const cardRecords = (records || []).filter(r => r.cardId === cardId);
+          const activeSession = cardRecords.find(r => !r.clockOut);
+
+          if (activeSession) {
+            return [{
+              text: '⏳ 打卡中',
+              color: 'green'
+            }];
+          }
+
+          // 计算今日总工时
+          const today = new Date().toDateString();
+          const todayMinutes = cardRecords
+            .filter(r => r.clockOut && new Date(r.clockIn).toDateString() === today)
+            .reduce((sum, r) => sum + Math.floor((r.clockOut - r.clockIn) / 60000), 0);
+
+          if (todayMinutes > 0) {
+            return [{
+              text: `今日 ${Math.floor(todayMinutes/60)}h${todayMinutes%60}m`,
+              color: 'blue'
+            }];
+          }
+          return [];
+        });
+      },
+
+      // --- 顶部菜单按钮（工时报表）---
+      'board-buttons': function(t, options) {
+        return [{
+          icon: 'https://cdn-icons-png.flaticon.com/512/833/833451.png',
+          text: '工时报表',
+          callback: function(t) {
+            return t.popup({
+              title: '📊 工时报表',
+              url: './reports.html',
+              height: 520,
+            });
+          }
+        }];
+      }
+    });
+  </script>
+</body>
+</html>
