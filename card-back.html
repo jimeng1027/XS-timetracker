@@ -33,10 +33,10 @@
     .active-dot{width:7px;height:7px;border-radius:50%;background:var(--orange);animation:pulse 1.5s infinite;margin-left:6px;flex-shrink:0;}
     @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(1.3)}}
 
-    /* Name input + clock in area */
+    /* Clock in area */
     .clockin-area{margin-top:10px;display:flex;gap:8px;align-items:center;}
-    .name-input{flex:1;border:1px solid var(--border);border-radius:4px;padding:6px 8px;font-family:var(--sans);font-size:12px;color:var(--text);outline:none;background:#fff;}
-    .name-input:focus{border-color:var(--orange);}
+    .current-user{flex:1;display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--text);}
+    .current-avatar{width:24px;height:24px;border-radius:50%;background:var(--orange);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0;}
 
     .btn-start{padding:6px 14px;background:var(--orange);color:#fff;border:none;border-radius:4px;font-family:var(--sans);font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap;}
     .btn-start:hover{filter:brightness(1.1);}
@@ -71,7 +71,10 @@
   <div id="personList"><div class="empty-state">暂无打卡记录</div></div>
 
   <div class="clockin-area">
-    <input class="name-input" type="text" id="nameInput" placeholder="输入姓名开始打卡...">
+    <div class="current-user">
+      <div class="current-avatar" id="currentAvatar">?</div>
+      <span id="currentUserName">载入中...</span>
+    </div>
     <button class="btn-start" id="btnStart" onclick="handleBtn()">开始打卡</button>
   </div>
   <div class="status-msg" id="statusMsg"></div>
@@ -85,6 +88,8 @@
   var timerInterval = null;
   var AVATAR_COLORS = ['av0','av1','av2','av3','av4','av5'];
 
+  var currentUserName = '';
+
   async function init() {
     var ctx = t.getContext();
     cardId = ctx.card;
@@ -92,22 +97,21 @@
     cardName = cardData.name;
     try { var ld = await t.list('name'); listName = ld.name; } catch(e) { listName = ''; }
 
-    // 先读本地存储
-    var saved = localStorage.getItem('tt_username') || '';
-
-    // 如果没有本地记录，从 Trello 获取当前用户名
-    if (!saved) {
-      try {
-        var member = await t.member('fullName', 'username');
-        saved = member.fullName || member.username || '';
-        if (saved) localStorage.setItem('tt_username', saved);
-      } catch(e) {}
+    // 获取当前 Trello 登录用户名，不可更改
+    try {
+      var member = await t.member('fullName', 'username');
+      currentUserName = member.fullName || member.username || '未知用户';
+    } catch(e) {
+      currentUserName = localStorage.getItem('tt_username') || '未知用户';
     }
 
-    document.getElementById('nameInput').value = saved;
+    // 显示当前用户
+    var initials = currentUserName.split(' ').map(function(w){return w[0];}).join('').toUpperCase().slice(0,2);
+    document.getElementById('currentAvatar').textContent = initials;
+    document.getElementById('currentUserName').textContent = currentUserName;
 
     allRecords = (await t.get('board', 'shared', STORAGE_KEY)) || [];
-    checkActiveSession(saved);
+    checkActiveSession(currentUserName);
     render();
     t.sizeTo('#root').catch(function(){});
   }
@@ -119,31 +123,21 @@
     });
     if (a) {
       activeSession = a;
-      lockNameInput(true);
       document.getElementById('btnStart').textContent = '结束打卡';
       document.getElementById('btnStart').className = 'btn-stop';
     }
   }
 
-  function lockNameInput(locked) {
-    var input = document.getElementById('nameInput');
-    input.disabled = locked;
-    input.style.opacity = locked ? '0.5' : '1';
-    input.style.cursor = locked ? 'not-allowed' : 'text';
-  }
-
   async function handleBtn() {
-    var name = document.getElementById('nameInput').value.trim();
-    if (!name) { setStatus('请输入姓名'); return; }
+    if (!currentUserName) { setStatus('无法获取用户信息'); return; }
 
     var myActive = allRecords.find(function(r) {
-      return r.cardId === cardId && r.userName === name && !r.clockOut;
+      return r.cardId === cardId && r.userName === currentUserName && !r.clockOut;
     });
 
     if (myActive) {
       myActive.clockOut = Date.now();
       activeSession = null;
-      lockNameInput(false);
       document.getElementById('btnStart').textContent = '开始打卡';
       document.getElementById('btnStart').className = 'btn-start';
       setStatus('✓ 打卡结束');
@@ -151,12 +145,10 @@
       var s = {
         id: Date.now() + '_' + Math.random().toString(36).substr(2,5),
         cardId: cardId, cardName: cardName, listName: listName,
-        userName: name, clockIn: Date.now(), clockOut: null, manual: false
+        userName: currentUserName, clockIn: Date.now(), clockOut: null, manual: false
       };
       allRecords.push(s);
       activeSession = s;
-      localStorage.setItem('tt_username', name);
-      lockNameInput(true);
       document.getElementById('btnStart').textContent = '结束打卡';
       document.getElementById('btnStart').className = 'btn-stop';
       setStatus('✓ 打卡开始');
