@@ -6,11 +6,11 @@
   <script src="https://p.trellocdn.com/power-up.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
-    :root {
-      --bg:#0e1822; --surface:#162030; --surface2:#1c2a3e;
-      --border:#253448; --navy:#1B2E4B; --orange:#E8943A;
-      --brown:#8B5E3C; --cream:#F5ECD7; --text:#EEE8DC; --muted:#7A8FA6;
-      --mono:'Space Mono',monospace; --sans:'Noto Sans SC',sans-serif;
+    :root{
+      --bg:#0e1822;--surface:#162030;--surface2:#1c2a3e;
+      --border:#253448;--navy:#1B2E4B;--orange:#E8943A;
+      --brown:#8B5E3C;--cream:#F5ECD7;--text:#EEE8DC;--muted:#7A8FA6;
+      --mono:'Space Mono',monospace;--sans:'Noto Sans SC',sans-serif;
     }
     *{box-sizing:border-box;margin:0;padding:0;}
     body{background:var(--bg);color:var(--text);font-family:var(--sans);padding:14px;font-size:13px;}
@@ -20,14 +20,17 @@
     input[type="text"],input[type="datetime-local"],select{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-family:var(--sans);font-size:12px;outline:none;width:100%;transition:border-color .2s;}
     input:focus,select:focus{border-color:var(--orange);}
     input[type="datetime-local"]::-webkit-calendar-picker-indicator{filter:invert(.5);cursor:pointer;}
+
     .clock-display{background:var(--navy);border:1px solid #2a4060;border-radius:10px;padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;}
     .clock-time{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--orange);}
     .clock-date{font-size:10px;color:var(--muted);font-family:var(--mono);text-align:right;line-height:1.6;}
     .session-pill{display:none;align-items:center;gap:5px;background:rgba(232,148,58,.15);border:1px solid var(--orange);border-radius:20px;padding:3px 10px;font-family:var(--mono);font-size:11px;color:var(--orange);animation:blink 2s infinite;}
     @keyframes blink{0%,100%{opacity:1}50%{opacity:.55}}
+
     .mode-tabs{display:flex;gap:4px;margin-bottom:10px;background:var(--surface);padding:3px;border-radius:8px;}
     .mode-tab{flex:1;padding:6px;border:none;border-radius:6px;background:transparent;color:var(--muted);font-family:var(--sans);font-size:12px;cursor:pointer;transition:all .15s;}
     .mode-tab.active{background:var(--orange);color:#fff;font-weight:700;}
+
     .btn{width:100%;padding:10px;border:none;border-radius:8px;font-size:13px;font-weight:700;font-family:var(--sans);cursor:pointer;transition:all .15s;margin-bottom:7px;}
     .btn-clockin{background:var(--orange);color:#fff;}
     .btn-clockout{background:var(--brown);color:#fff;}
@@ -36,20 +39,29 @@
     .btn:disabled{opacity:.3;cursor:not-allowed;transform:none;}
     .btn-sm{padding:5px 10px;border:1px solid var(--border);border-radius:5px;font-size:11px;font-family:var(--sans);cursor:pointer;background:var(--surface2);color:var(--muted);transition:all .15s;}
     .btn-sm:hover,.btn-sm.active-f{border-color:var(--orange);color:var(--orange);}
+
     .status-msg{font-size:11px;text-align:center;color:var(--orange);height:16px;margin-bottom:6px;font-family:var(--mono);}
     .divider{border:none;border-top:1px solid var(--border);margin:10px 0;}
+
+    /* Manual panel */
+    #panelManual .manual-grid{display:flex;flex-direction:column;gap:10px;margin-bottom:10px;}
+    #panelManual input[type="datetime-local"]{font-size:13px;padding:10px;}
+    .duration-preview{background:var(--navy);border-radius:6px;padding:8px 12px;text-align:center;margin-bottom:10px;font-family:var(--mono);color:var(--orange);font-size:16px;font-weight:700;}
+    .duration-label{font-size:10px;color:var(--muted);margin-bottom:2px;}
+
     .records-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
     .records-title{font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);font-family:var(--mono);}
     .records-scroll{max-height:130px;overflow-y:auto;}
     .records-scroll::-webkit-scrollbar{width:3px;}
     .records-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+
     .record-item{display:flex;justify-content:space-between;align-items:center;background:var(--surface);border-radius:6px;padding:7px 10px;margin-bottom:4px;border-left:3px solid var(--brown);transition:background .15s;}
     .record-item:hover{background:var(--surface2);}
     .record-item.active{border-left-color:var(--orange);}
     .record-item.manual{border-left-color:#5a7fa0;}
     .record-main{flex:1;}
     .record-name{font-weight:700;font-size:12px;color:var(--cream);}
-    .record-project{font-size:10px;color:var(--muted);}
+    .record-meta{font-size:10px;color:var(--muted);margin-top:1px;}
     .record-time{font-family:var(--mono);font-size:10px;color:var(--muted);}
     .record-right{display:flex;align-items:center;gap:8px;}
     .record-duration{font-family:var(--mono);font-size:12px;color:var(--brown);font-weight:700;}
@@ -59,18 +71,19 @@
     .delete-btn:hover{color:var(--orange);}
     .badge{font-size:9px;padding:1px 5px;border-radius:3px;font-family:var(--mono);margin-left:5px;background:rgba(90,127,160,.2);color:#7aadcc;}
     .empty-state{text-align:center;color:var(--muted);font-size:11px;padding:14px;}
+
     .xin-strip{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
     .xin-dot{width:8px;height:8px;border-radius:50%;}
     .xin-name{font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:var(--muted);text-transform:uppercase;}
     .xin-line{flex:1;height:1px;background:var(--border);}
     .demo-banner{background:rgba(139,94,60,.15);border:1px solid var(--brown);border-radius:6px;padding:6px 12px;margin-bottom:10px;font-size:11px;color:var(--brown);text-align:center;}
 
-    /* Manual panel larger layout */
-    #panelManual .manual-grid{display:flex;flex-direction:column;gap:10px;margin-bottom:10px;}
-    #panelManual .manual-grid .col{display:flex;flex-direction:column;}
-    #panelManual input[type="datetime-local"]{font-size:13px;padding:10px;}
-    .duration-preview{background:var(--navy);border-radius:6px;padding:8px 12px;text-align:center;margin-bottom:10px;font-family:var(--mono);color:var(--orange);font-size:16px;font-weight:700;}
-    .duration-label{font-size:10px;color:var(--muted);margin-bottom:2px;}
+    /* Project/Task info bar */
+    .info-bar{background:var(--navy);border-radius:7px;padding:8px 12px;margin-bottom:10px;border-left:3px solid var(--orange);}
+    .info-row{display:flex;align-items:center;gap:6px;font-size:11px;}
+    .info-row+.info-row{margin-top:4px;}
+    .info-tag{font-family:var(--mono);font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;width:36px;flex-shrink:0;}
+    .info-val{color:var(--cream);font-weight:600;}
   </style>
 </head>
 <body>
@@ -82,16 +95,22 @@
     <div class="xin-line"></div>
   </div>
 
-  <div class="row">
-    <div class="col">
-      <div class="label">姓名</div>
-      <input type="text" id="nameInput" placeholder="输入姓名..." maxlength="20">
+  <!-- 项目 & Task 信息栏 -->
+  <div class="info-bar">
+    <div class="info-row">
+      <span class="info-tag">项目</span>
+      <span class="info-val" id="displayList">--</span>
     </div>
-    <div class="col">
-      <div class="label">项目</div>
-      <input type="text" id="projectInput" placeholder="项目名称..." maxlength="30" list="projectSuggestions">
-      <datalist id="projectSuggestions"></datalist>
+    <div class="info-row">
+      <span class="info-tag">Task</span>
+      <span class="info-val" id="displayCard">--</span>
     </div>
+  </div>
+
+  <!-- 姓名 -->
+  <div style="margin-bottom:10px">
+    <div class="label">姓名</div>
+    <input type="text" id="nameInput" placeholder="输入姓名..." maxlength="20">
   </div>
 
   <div class="clock-display">
@@ -107,21 +126,19 @@
     <button class="mode-tab"        id="tab-manual" onclick="switchMode('manual')">✏️ 手动补卡</button>
   </div>
 
-  <!-- 实时打卡 -->
   <div id="panelLive">
     <div class="status-msg" id="statusMsg"></div>
     <button class="btn btn-clockin"  id="btnClockIn"  onclick="clockIn()">▶ 开始打卡</button>
     <button class="btn btn-clockout" id="btnClockOut" onclick="clockOut()" disabled>■ 结束打卡</button>
   </div>
 
-  <!-- 手动补卡 -->
   <div id="panelManual" style="display:none">
     <div class="manual-grid">
-      <div class="col">
+      <div>
         <div class="label">开始时间</div>
         <input type="datetime-local" id="manualStart" oninput="updatePreview()">
       </div>
-      <div class="col">
+      <div>
         <div class="label">结束时间</div>
         <input type="datetime-local" id="manualEnd" oninput="updatePreview()">
       </div>
@@ -148,7 +165,7 @@
 <script>
   var STORAGE_KEY='timetracker_records_v2';
   var trelloInstance=null,standaloneMode=false;
-  var cardId='standalone',cardName='';
+  var cardId='standalone',cardName='未知任务',listName='未知项目';
   var clockInterval=null,sessionInterval=null;
   var activeSession=null,allRecords=[],currentMode='live',todayFilter='all';
 
@@ -170,20 +187,34 @@
   async function init(){
     if(!isTrelloAvailable()){
       standaloneMode=true;
+      cardName='Ocean waves';
+      listName='FX dev list';
       var b=document.createElement('div');b.className='demo-banner';
       b.textContent='预览模式 — 使用浏览器本地存储';
       document.body.insertBefore(b,document.body.firstChild);
     } else {
       trelloInstance=TrelloPowerUp.iframe();
-      var ctx=trelloInstance.getContext();cardId=ctx.card;
-      var card=await trelloInstance.card('name');cardName=card.name;
-      document.getElementById('projectInput').value=cardName;
+      var ctx=trelloInstance.getContext();
+      cardId=ctx.card;
+      // 获取卡片名和列表名
+      var cardData=await trelloInstance.card('name','idList');
+      cardName=cardData.name;
+      try {
+        var listData=await trelloInstance.list('name');
+        listName=listData.name;
+      } catch(e){
+        listName='未知项目';
+      }
     }
+
+    document.getElementById('displayList').textContent=listName;
+    document.getElementById('displayCard').textContent=cardName;
+
     allRecords=await loadRecords();
-    refreshSuggestions();
     var saved=localStorage.getItem('tt_username')||'';
     document.getElementById('nameInput').value=saved;
     if(saved)checkActiveSession(saved);
+
     var now=new Date();
     document.getElementById('manualEnd').value=toLocal(now);
     document.getElementById('manualStart').value=toLocal(new Date(now-7200000));
@@ -200,14 +231,8 @@
     document.getElementById('durationPreview').textContent=fdFull(ms);
   }
 
-  function refreshSuggestions(){
-    var dl=document.getElementById('projectSuggestions');
-    var ps=Array.from(new Set(allRecords.map(function(r){return r.cardName;}))).sort();
-    dl.innerHTML=ps.map(function(p){return'<option value="'+esc(p)+'">';}).join('');
-  }
-
   function checkActiveSession(name){
-    var a=allRecords.find(function(r){return r.userName===name&&!r.clockOut;});
+    var a=allRecords.find(function(r){return r.cardId===cardId&&r.userName===name&&!r.clockOut;});
     if(a){activeSession=a;document.getElementById('btnClockIn').disabled=true;document.getElementById('btnClockOut').disabled=false;document.getElementById('sessionPill').style.display='flex';startSessionTimer();setStatus('🟠 '+name+' 打卡中...');}
   }
 
@@ -221,14 +246,16 @@
 
   async function clockIn(){
     var name=document.getElementById('nameInput').value.trim();
-    var proj=document.getElementById('projectInput').value.trim();
     if(!name){setStatus('请先输入姓名！');return;}
-    if(!proj){setStatus('请输入项目名！');return;}
-    if(allRecords.find(function(r){return r.userName===name&&!r.clockOut;})){setStatus('你已经在打卡中，请先结束');return;}
+    if(allRecords.find(function(r){return r.cardId===cardId&&r.userName===name&&!r.clockOut;})){setStatus('你已经在打卡中，请先结束');return;}
     localStorage.setItem('tt_username',name);
-    var s={id:Date.now()+'_'+Math.random().toString(36).substr(2,5),cardId:cardId,cardName:proj,userName:name,clockIn:Date.now(),clockOut:null,manual:false};
+    var s={
+      id:Date.now()+'_'+Math.random().toString(36).substr(2,5),
+      cardId:cardId, cardName:cardName, listName:listName,
+      userName:name, clockIn:Date.now(), clockOut:null, manual:false
+    };
     allRecords.push(s);activeSession=s;
-    await saveRecords();refreshSuggestions();
+    await saveRecords();
     document.getElementById('btnClockIn').disabled=true;document.getElementById('btnClockOut').disabled=false;
     document.getElementById('sessionPill').style.display='flex';
     startSessionTimer();setStatus('✓ 打卡开始');renderTodayRecords();
@@ -245,20 +272,24 @@
 
   async function saveManual(){
     var name=document.getElementById('nameInput').value.trim();
-    var proj=document.getElementById('projectInput').value.trim();
     var sv=document.getElementById('manualStart').value;
     var ev=document.getElementById('manualEnd').value;
     if(!name){setStatusM('请先输入姓名！');return;}
-    if(!proj){setStatusM('请输入项目名！');return;}
     if(!sv||!ev){setStatusM('请填写开始和结束时间');return;}
     var st=new Date(sv).getTime(),et=new Date(ev).getTime();
     if(et<=st){setStatusM('结束时间必须晚于开始时间');return;}
     if(et>Date.now()){setStatusM('结束时间不能是未来');return;}
     localStorage.setItem('tt_username',name);
-    allRecords.push({id:'m_'+Date.now()+'_'+Math.random().toString(36).substr(2,5),cardId:cardId,cardName:proj,userName:name,clockIn:st,clockOut:et,manual:true});
-    await saveRecords();refreshSuggestions();
+    allRecords.push({
+      id:'m_'+Date.now()+'_'+Math.random().toString(36).substr(2,5),
+      cardId:cardId, cardName:cardName, listName:listName,
+      userName:name, clockIn:st, clockOut:et, manual:true
+    });
+    await saveRecords();
     setStatusM('✓ 补卡已保存');renderTodayRecords();
-    var now=new Date();document.getElementById('manualEnd').value=toLocal(now);document.getElementById('manualStart').value=toLocal(new Date(now-3600000));
+    var now=new Date();
+    document.getElementById('manualEnd').value=toLocal(now);
+    document.getElementById('manualStart').value=toLocal(new Date(now-3600000));
     updatePreview();
   }
 
@@ -291,7 +322,18 @@
       var dur=r.clockOut?fd(r.clockOut-r.clockIn):'⏳';
       var cls=!r.clockOut?'active':(r.manual?'manual':'');
       var tag=r.manual?'<span class="badge">补卡</span>':'';
-      return'<div class="record-item '+cls+'"><div class="record-main"><div class="record-name">'+esc(r.userName)+tag+'</div><div class="record-project">📋 '+esc(r.cardName)+'</div><div class="record-time">'+inT+' → '+outT+'</div></div><div class="record-right"><div class="record-duration">'+dur+'</div><button class="delete-btn" onclick="deleteRecord(\''+r.id+'\')">✕</button></div></div>';
+      var proj=r.listName||r.cardName;
+      var task=r.listName?r.cardName:'';
+      return'<div class="record-item '+cls+'">'
+        +'<div class="record-main">'
+        +'<div class="record-name">'+esc(r.userName)+tag+'</div>'
+        +'<div class="record-meta">📁 '+esc(proj)+(task?' · '+esc(task):'')+'</div>'
+        +'<div class="record-time">'+inT+' → '+outT+'</div>'
+        +'</div>'
+        +'<div class="record-right">'
+        +'<div class="record-duration">'+dur+'</div>'
+        +'<button class="delete-btn" onclick="deleteRecord(\''+r.id+'\')">✕</button>'
+        +'</div></div>';
     }).join('');
   }
 

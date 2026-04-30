@@ -5,21 +5,20 @@
   <title>XIN Time Tracker</title>
   <script src="https://p.trellocdn.com/power-up.min.js"></script>
   <style>
-    body { margin: 0; font-family: sans-serif; background: #1B2E4B; color: white; display: flex; align-items: center; justify-content: center; height: 100vh; }
-    p { font-size: 14px; opacity: 0.7; }
+    body{margin:0;font-family:sans-serif;background:#1B2E4B;color:white;display:flex;align-items:center;justify-content:center;height:100vh;}
+    p{font-size:14px;opacity:0.7;}
   </style>
 </head>
 <body>
   <p>XIN Time Tracker ✓</p>
   <script>
     var STORAGE_KEY = 'timetracker_records_v2';
-    var ICON = 'https://raw.githubusercontent.com/jimeng1027/XS-timetracker/main/icon.png';
 
     TrelloPowerUp.initialize({
 
       'card-buttons': function(t) {
         return [{
-          icon: ICON,
+          icon: 'https://raw.githubusercontent.com/jimeng1027/XS-timetracker/main/icon.png',
           text: '工时打卡',
           callback: function(t) {
             return t.popup({
@@ -31,16 +30,13 @@
         }];
       },
 
-      // ── 卡片徽章：每人名字 + 工时 ──
       'card-badges': function(t) {
         return t.get('board', 'shared', STORAGE_KEY).then(function(records) {
           records = records || [];
           var cardId = t.getContext().card;
           var cardRecords = records.filter(function(r) { return r.cardId === cardId; });
-
           if (!cardRecords.length) return [];
 
-          // 按人汇总工时
           var byPerson = {};
           cardRecords.forEach(function(r) {
             if (!byPerson[r.userName]) byPerson[r.userName] = { ms: 0, active: false };
@@ -55,23 +51,21 @@
           Object.keys(byPerson).forEach(function(name) {
             var p = byPerson[name];
             if (p.active) {
-              badges.push({ text: '⏳ ' + name, color: 'yellow' });
+              badges.push({ text: '⏳ ' + name, color: 'orange' });
             } else if (p.ms > 0) {
               var m = Math.floor(p.ms / 60000);
               var h = Math.floor(m / 60);
               var label = h > 0 ? h + 'h' + (m % 60 > 0 ? (m % 60) + 'm' : '') : m + 'm';
-              badges.push({ text: name + ' ' + label, color: 'blue' });
+              badges.push({ text: name + ' ' + label, color: 'sky' });
             }
           });
-
           return badges;
         }).catch(function() { return []; });
       },
 
-      // ── 看板顶部按钮（工时报表）──
       'board-buttons': function(t) {
         return [{
-          icon: ICON,
+          icon: 'https://raw.githubusercontent.com/jimeng1027/XS-timetracker/main/icon.png',
           text: '工时报表',
           callback: function(t) {
             return t.popup({
