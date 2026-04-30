@@ -90,12 +90,16 @@
     cardName = cardData.name;
     try { var ld = await t.list('name'); listName = ld.name; } catch(e) { listName = ''; }
 
-    // 获取当前 Trello 登录用户名，不可更改
+    // 获取当前 Trello 登录用户名和头像颜色
     try {
-      var member = await t.member('fullName', 'username');
+      var member = await t.member('fullName', 'username', 'avatarColor');
       currentUserName = member.fullName || member.username || '未知用户';
+      // 用 Trello 的头像颜色
+      if (member.avatarColor) {
+        document.getElementById('currentAvatar').style.background = member.avatarColor;
+      }
     } catch(e) {
-      currentUserName = localStorage.getItem('tt_username') || '未知用户';
+      currentUserName = '未知用户';
     }
 
     // 显示当前用户
@@ -189,10 +193,14 @@
       var p = byPerson[name];
       var initials = name.split(' ').map(function(w){ return w[0]; }).join('').toUpperCase().slice(0,2);
       var colorCls = AVATAR_COLORS[i % AVATAR_COLORS.length];
+      // 如果是当前用户，用 Trello 头像颜色
+      var avatarStyle = (name === currentUserName && document.getElementById('currentAvatar'))
+        ? 'style="background:' + document.getElementById('currentAvatar').style.background + '"'
+        : '';
       var hoursLabel = p.active ? '进行中' : fmtH(p.ms);
       var activeDot = p.active ? '<div class="active-dot"></div>' : '';
       return '<div class="person-row">'
-        + '<div class="avatar ' + colorCls + '">' + initials + '</div>'
+        + '<div class="avatar ' + (avatarStyle ? '' : colorCls) + '" ' + avatarStyle + '>' + initials + '</div>'
         + '<div class="person-info"><div class="person-name">' + esc(name) + '</div></div>'
         + activeDot
         + '<div class="person-hours">' + hoursLabel + '</div>'
