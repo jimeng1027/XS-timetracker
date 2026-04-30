@@ -87,14 +87,15 @@
 
     // 获取当前 Trello 登录用户名
     try {
-      var ctx = t.getContext();
       var member = await t.member('fullName', 'username', 'avatarColor');
-      currentUserName = member.fullName || member.username || '未知用户';
+      currentUserName = member.fullName || member.username || '';
+      if (currentUserName) {
+        localStorage.setItem('tt_username', currentUserName);
+      }
       if (member.avatarColor) {
         document.getElementById('currentAvatar').style.background = member.avatarColor;
       }
     } catch(e) {
-      // fallback: 读本地存储
       currentUserName = localStorage.getItem('tt_username') || '未知用户';
     }
 

@@ -17,15 +17,27 @@
     TrelloPowerUp.initialize({
 
       'card-back-section': function(t) {
-        return {
-          title: '工时追踪',
-          icon: 'https://raw.githubusercontent.com/jimeng1027/XS-timetracker/main/icon.png',
-          content: {
-            type: 'iframe',
-            url: t.signUrl('./card-back.html'),
-            height: 220,
-          }
-        };
+        return t.member('fullName', 'username', 'avatarColor').then(function(member) {
+          return {
+            title: '工时追踪',
+            icon: 'https://raw.githubusercontent.com/jimeng1027/XS-timetracker/main/icon.png',
+            content: {
+              type: 'iframe',
+              url: t.signUrl('./card-back.html'),
+              height: 220,
+            }
+          };
+        }).catch(function() {
+          return {
+            title: '工时追踪',
+            icon: 'https://raw.githubusercontent.com/jimeng1027/XS-timetracker/main/icon.png',
+            content: {
+              type: 'iframe',
+              url: t.signUrl('./card-back.html'),
+              height: 220,
+            }
+          };
+        });
       },
 
       'card-buttons': function(t) {
