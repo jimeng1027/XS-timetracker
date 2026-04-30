@@ -47,6 +47,10 @@
 
     .status-msg{font-size:11px;color:var(--orange);height:14px;margin-top:4px;font-family:var(--mono);}
 
+    /* Project/task info */
+    .meta-bar{display:flex;flex-direction:column;gap:4px;margin-bottom:10px;background:#f0f2f5;border-radius:6px;padding:8px 10px;}
+    .meta-row{display:flex;align-items:center;gap:8px;font-size:11px;}
+    .meta-tag{color:var(--muted);font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.08em;width:28px;flex-shrink:0;}
     /* Colors for avatars */
     .av0{background:#E8943A;} .av1{background:#1B2E4B;} .av2{background:#8B5E3C;}
     .av3{background:#5a7fa0;} .av4{background:#4a9e7a;} .av5{background:#9b59b6;}
@@ -68,7 +72,7 @@
 
   <div class="clockin-area">
     <input class="name-input" type="text" id="nameInput" placeholder="输入姓名开始打卡...">
-    <button class="btn-start" id="btnStart" onclick="handleBtn()">开始</button>
+    <button class="btn-start" id="btnStart" onclick="handleBtn()">开始打卡</button>
   </div>
   <div class="status-msg" id="statusMsg"></div>
 
@@ -88,7 +92,15 @@
     cardName = cardData.name;
     try { var ld = await t.list('name'); listName = ld.name; } catch(e) { listName = ''; }
 
+    document.getElementById('nameInput').value = saved;
     var saved = localStorage.getItem('tt_username') || '';
+    if (!saved) {
+      try {
+        var member = await t.member('fullName', 'username');
+        saved = member.fullName || member.username || '';
+        if (saved) localStorage.setItem('tt_username', saved);
+      } catch(e) {}
+    }
     document.getElementById('nameInput').value = saved;
 
     allRecords = (await t.get('board', 'shared', STORAGE_KEY)) || [];
@@ -106,9 +118,17 @@
     });
     if (a) {
       activeSession = a;
-      document.getElementById('btnStart').textContent = '结束';
+      lockNameInput(true);
+      document.getElementById('btnStart').textContent = '结束打卡';
       document.getElementById('btnStart').className = 'btn-stop';
     }
+  }
+
+  function lockNameInput(locked) {
+    var input = document.getElementById('nameInput');
+    input.disabled = locked;
+    input.style.opacity = locked ? '0.5' : '1';
+    input.style.cursor = locked ? 'not-allowed' : 'text';
   }
 
   async function handleBtn() {
@@ -120,14 +140,13 @@
     });
 
     if (myActive) {
-      // Clock out
       myActive.clockOut = Date.now();
       activeSession = null;
-      document.getElementById('btnStart').textContent = '开始';
+      lockNameInput(false);
+      document.getElementById('btnStart').textContent = '开始打卡';
       document.getElementById('btnStart').className = 'btn-start';
       setStatus('✓ 打卡结束');
     } else {
-      // Clock in
       var s = {
         id: Date.now() + '_' + Math.random().toString(36).substr(2,5),
         cardId: cardId, cardName: cardName, listName: listName,
@@ -136,7 +155,8 @@
       allRecords.push(s);
       activeSession = s;
       localStorage.setItem('tt_username', name);
-      document.getElementById('btnStart').textContent = '结束';
+      lockNameInput(true);
+      document.getElementById('btnStart').textContent = '结束打卡';
       document.getElementById('btnStart').className = 'btn-stop';
       setStatus('✓ 打卡开始');
     }

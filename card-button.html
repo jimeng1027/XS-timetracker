@@ -95,15 +95,18 @@
     <div class="xin-line"></div>
   </div>
 
-  <!-- 项目 & Task 信息栏 -->
+  <!-- 项目（锁定）+ 任务（可编辑）-->
   <div class="info-bar">
     <div class="info-row">
       <span class="info-tag">项目</span>
       <span class="info-val" id="displayList">--</span>
+      <span style="font-size:10px;color:var(--muted);margin-left:4px">🔒</span>
     </div>
     <div class="info-row">
-      <span class="info-tag">Task</span>
-      <span class="info-val" id="displayCard">--</span>
+      <span class="info-tag">任务</span>
+      <input type="text" id="taskInput" placeholder="输入任务名..." maxlength="40"
+        style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:5px 8px;color:var(--text);font-family:var(--sans);font-size:12px;outline:none;"
+        onfocus="this.style.borderColor='var(--orange)'" onblur="this.style.borderColor='var(--border)'">
     </div>
   </div>
 
@@ -207,11 +210,18 @@
       }
     }
 
-    document.getElementById('displayList').textContent=listName;
-    document.getElementById('displayCard').textContent=cardName;
+    document.getElementById('displayList').textContent = listName;
+    document.getElementById('taskInput').value = cardName;
 
     allRecords=await loadRecords();
     var saved=localStorage.getItem('tt_username')||'';
+    if(!saved && !standaloneMode){
+      try{
+        var member=await trelloInstance.member('fullName','username');
+        saved=member.fullName||member.username||'';
+        if(saved)localStorage.setItem('tt_username',saved);
+      }catch(e){}
+    }
     document.getElementById('nameInput').value=saved;
     if(saved)checkActiveSession(saved);
 
@@ -246,12 +256,13 @@
 
   async function clockIn(){
     var name=document.getElementById('nameInput').value.trim();
+    var task=document.getElementById('taskInput').value.trim()||cardName;
     if(!name){setStatus('请先输入姓名！');return;}
     if(allRecords.find(function(r){return r.cardId===cardId&&r.userName===name&&!r.clockOut;})){setStatus('你已经在打卡中，请先结束');return;}
     localStorage.setItem('tt_username',name);
     var s={
       id:Date.now()+'_'+Math.random().toString(36).substr(2,5),
-      cardId:cardId, cardName:cardName, listName:listName,
+      cardId:cardId, cardName:task, listName:listName,
       userName:name, clockIn:Date.now(), clockOut:null, manual:false
     };
     allRecords.push(s);activeSession=s;
@@ -272,6 +283,7 @@
 
   async function saveManual(){
     var name=document.getElementById('nameInput').value.trim();
+    var task=document.getElementById('taskInput').value.trim()||cardName;
     var sv=document.getElementById('manualStart').value;
     var ev=document.getElementById('manualEnd').value;
     if(!name){setStatusM('请先输入姓名！');return;}
@@ -282,7 +294,7 @@
     localStorage.setItem('tt_username',name);
     allRecords.push({
       id:'m_'+Date.now()+'_'+Math.random().toString(36).substr(2,5),
-      cardId:cardId, cardName:cardName, listName:listName,
+      cardId:cardId, cardName:task, listName:listName,
       userName:name, clockIn:st, clockOut:et, manual:true
     });
     await saveRecords();
