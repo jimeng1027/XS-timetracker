@@ -7,45 +7,42 @@
   <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
     :root{
-      --bg:#0e1822; --surface:#162030; --surface2:#1c2a3e;
-      --border:#253448; --navy:#1B2E4B; --orange:#E8943A;
-      --brown:#8B5E3C; --cream:#F5ECD7; --text:#EEE8DC; --muted:#7A8FA6;
+      --orange:#E8943A; --navy:#1B2E4B; --brown:#8B5E3C;
+      --cream:#F5ECD7; --muted:#7A8FA6; --border:#d0d8e0;
+      --text:#172b4d;
       --mono:'Space Mono',monospace; --sans:'Noto Sans SC',sans-serif;
     }
     *{box-sizing:border-box;margin:0;padding:0;}
-    body{font-family:var(--sans);font-size:13px;color:var(--text);background:var(--bg);padding:10px;}
+    body{font-family:var(--sans);font-size:13px;color:var(--text);background:transparent;padding:4px 0;}
 
     .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
-    .title{display:flex;align-items:center;gap:7px;font-weight:700;font-size:12px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:.1em;}
-    .xin-dot{width:7px;height:7px;border-radius:50%;}
+    .title{display:flex;align-items:center;gap:7px;font-weight:700;font-size:13px;color:var(--text);}
+    .title-icon{width:16px;height:16px;background:var(--orange);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;flex-shrink:0;}
+    .total-row{font-size:12px;color:#5e6c84;}
+    .total-val{font-family:var(--mono);font-weight:700;color:var(--text);}
 
-    .total-row{font-size:11px;color:var(--muted);font-family:var(--mono);}
-    .total-val{color:var(--orange);font-weight:700;}
-
-    /* Person rows */
-    .person-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);}
+    .person-row{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border);}
     .person-row:last-child{border-bottom:none;}
     .avatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;}
     .person-info{flex:1;}
-    .person-name{font-weight:600;font-size:12px;color:var(--cream);}
-    .person-hours{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--orange);margin-left:auto;}
+    .person-name{font-weight:600;font-size:12px;color:var(--text);}
+    .person-hours{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--text);margin-left:auto;}
     .active-dot{width:7px;height:7px;border-radius:50%;background:var(--orange);animation:pulse 1.5s infinite;margin-left:6px;flex-shrink:0;}
     @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(1.3)}}
 
-    /* Clock in area */
-    .clockin-area{margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center;}
-    .current-user{flex:1;display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--cream);}
+    .clockin-area{margin-top:10px;display:flex;gap:8px;align-items:center;}
+    .current-user{flex:1;display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--text);}
     .current-avatar{width:26px;height:26px;border-radius:50%;background:var(--orange);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0;}
 
-    .btn-start{padding:7px 16px;background:var(--orange);color:#fff;border:none;border-radius:6px;font-family:var(--sans);font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap;}
+    .btn-start{padding:6px 14px;background:var(--orange);color:#fff;border:none;border-radius:4px;font-family:var(--sans);font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap;}
     .btn-start:hover{filter:brightness(1.1);}
-    .btn-stop{padding:7px 16px;background:var(--brown);color:#fff;border:none;border-radius:6px;font-family:var(--sans);font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap;}
+    .btn-stop{padding:6px 14px;background:var(--brown);color:#fff;border:none;border-radius:4px;font-family:var(--sans);font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap;}
     .btn-stop:hover{filter:brightness(1.1);}
 
-    .empty-state{color:var(--muted);font-size:12px;padding:8px 0;}
-    .status-msg{font-size:11px;color:var(--orange);height:14px;margin-top:6px;font-family:var(--mono);}
+    .empty-state{color:var(--muted);font-size:12px;padding:4px 0 8px;}
+    .status-msg{font-size:11px;color:var(--orange);height:14px;margin-top:4px;font-family:var(--mono);}
 
-    .av0{background:#E8943A;} .av1{background:#1B2E4B;border:1px solid #3a5070;} .av2{background:#8B5E3C;}
+    .av0{background:#E8943A;} .av1{background:#1B2E4B;} .av2{background:#8B5E3C;}
     .av3{background:#5a7fa0;} .av4{background:#4a9e7a;} .av5{background:#9b59b6;}
   </style>
 </head>
@@ -53,9 +50,7 @@
 
   <div class="header">
     <div class="title">
-      <div class="xin-dot" style="background:#E8943A"></div>
-      <div class="xin-dot" style="background:#1B2E4B;border:1px solid #3a5070"></div>
-      <div class="xin-dot" style="background:#8B5E3C"></div>
+      <div class="title-icon">⏱</div>
       <span>工时追踪</span>
     </div>
     <div class="total-row">总计：<span class="total-val" id="totalHours">0m</span></div>
@@ -90,16 +85,17 @@
     cardName = cardData.name;
     try { var ld = await t.list('name'); listName = ld.name; } catch(e) { listName = ''; }
 
-    // 获取当前 Trello 登录用户名和头像颜色
+    // 获取当前 Trello 登录用户名
     try {
+      var ctx = t.getContext();
       var member = await t.member('fullName', 'username', 'avatarColor');
       currentUserName = member.fullName || member.username || '未知用户';
-      // 用 Trello 的头像颜色
       if (member.avatarColor) {
         document.getElementById('currentAvatar').style.background = member.avatarColor;
       }
     } catch(e) {
-      currentUserName = '未知用户';
+      // fallback: 读本地存储
+      currentUserName = localStorage.getItem('tt_username') || '未知用户';
     }
 
     // 显示当前用户
