@@ -80,10 +80,10 @@
           icon: 'https://raw.githubusercontent.com/jimeng1027/XS-timetracker/main/icon.png',
           text: '工时报表',
           callback: function(t) {
-            return t.popup({
-              title: '工时报表',
+            return t.modal({
+              title: 'XIN Studio · 工时报表',
               url: './report-login.html',
-              height: 240,
+              fullscreen: true,
             });
           }
         }];
