@@ -31,34 +31,41 @@
         }];
       },
 
-      // ── 卡片徽章：打卡中 / 今日工时 ──
+      // ── 卡片徽章：每人名字 + 工时 ──
       'card-badges': function(t) {
-        // 从 board shared storage 读取（与 card-button.html 一致）
         return t.get('board', 'shared', STORAGE_KEY).then(function(records) {
           records = records || [];
           var cardId = t.getContext().card;
           var cardRecords = records.filter(function(r) { return r.cardId === cardId; });
 
-          // 是否有人正在打卡
-          var active = cardRecords.find(function(r) { return !r.clockOut; });
-          if (active) {
-            return [{ text: '⏳ 打卡中', color: 'green' }];
-          }
+          if (!cardRecords.length) return [];
 
-          // 计算总工时（所有时间，不只今日）
-          var totalMs = cardRecords
-            .filter(function(r) { return r.clockOut; })
-            .reduce(function(sum, r) { return sum + (r.clockOut - r.clockIn); }, 0);
+          // 按人汇总工时
+          var byPerson = {};
+          cardRecords.forEach(function(r) {
+            if (!byPerson[r.userName]) byPerson[r.userName] = { ms: 0, active: false };
+            if (!r.clockOut) {
+              byPerson[r.userName].active = true;
+            } else {
+              byPerson[r.userName].ms += (r.clockOut - r.clockIn);
+            }
+          });
 
-          if (totalMs > 0) {
-            var totalMin = Math.floor(totalMs / 60000);
-            var h = Math.floor(totalMin / 60);
-            var m = totalMin % 60;
-            var label = h > 0 ? h + 'h' + (m > 0 ? m + 'm' : '') : m + 'm';
-            return [{ text: '⏱ ' + label, color: 'blue' }];
-          }
+          var badges = [];
+          Object.keys(byPerson).forEach(function(name) {
+            var p = byPerson[name];
+            var shortName = name.split(' ')[0]; // 只取名字第一段
+            if (p.active) {
+              badges.push({ text: '⏳ ' + shortName, color: 'yellow' });
+            } else if (p.ms > 0) {
+              var m = Math.floor(p.ms / 60000);
+              var h = Math.floor(m / 60);
+              var label = h > 0 ? h + 'h' + (m % 60 > 0 ? (m % 60) + 'm' : '') : m + 'm';
+              badges.push({ text: shortName + ' ' + label, color: 'blue' });
+            }
+          });
 
-          return [];
+          return badges;
         }).catch(function() { return []; });
       },
 
