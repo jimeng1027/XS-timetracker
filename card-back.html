@@ -85,17 +85,23 @@
     cardName = cardData.name;
     try { var ld = await t.list('name'); listName = ld.name; } catch(e) { listName = ''; }
 
-    // 从 URL 参数读取用户名（由 index.html 传入）
+    // 优先从 URL 参数读取（由 index.html 通过 signUrl 传入）
     var urlParams = new URLSearchParams(window.location.search);
     var memberName = urlParams.get('memberName') || '';
 
-    // 如果 URL 有名字就用，否则用本地存储
     if (memberName) {
       currentUserName = memberName;
-      localStorage.setItem('tt_username', memberName);
     } else {
-      currentUserName = localStorage.getItem('tt_username') || '未知用户';
+      // 兜底：直接从 Trello API 获取，永远不用 localStorage
+      try {
+        var member = await t.member('fullName', 'username');
+        currentUserName = member.fullName || member.username || '未知用户';
+      } catch(e) {
+        currentUserName = '未知用户';
+      }
     }
+    // 清除旧的错误缓存，防止历史脏数据
+    try { localStorage.removeItem('tt_username'); } catch(e) {}
 
     // 显示当前用户
     var initials = currentUserName.split(' ').map(function(w){return w[0];}).join('').toUpperCase().slice(0,2);
