@@ -92,8 +92,10 @@
     cardName = cardData.name;
     try { var ld = await t.list('name'); listName = ld.name; } catch(e) { listName = ''; }
 
-    document.getElementById('nameInput').value = saved;
+    // 先读本地存储
     var saved = localStorage.getItem('tt_username') || '';
+
+    // 如果没有本地记录，从 Trello 获取当前用户名
     if (!saved) {
       try {
         var member = await t.member('fullName', 'username');
@@ -101,13 +103,12 @@
         if (saved) localStorage.setItem('tt_username', saved);
       } catch(e) {}
     }
+
     document.getElementById('nameInput').value = saved;
 
     allRecords = (await t.get('board', 'shared', STORAGE_KEY)) || [];
     checkActiveSession(saved);
     render();
-
-    // Auto-resize
     t.sizeTo('#root').catch(function(){});
   }
 
