@@ -13,13 +13,13 @@
   <p>XIN Time Tracker ✓</p>
   <script>
     var STORAGE_KEY = 'timetracker_records_v2';
+    var ICON = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0Ij48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIxMCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRTg5NDNBIiBzdHJva2Utd2lkdGg9IjIiLz48bGluZSB4MT0iMTIiIHkxPSIxMiIgeDI9IjEyIiB5Mj0iNyIgc3Ryb2tlPSIjRTg5NDNBIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxsaW5lIHgxPSIxMiIgeTE9IjEyIiB4Mj0iMTYiIHkyPSIxMiIgc3Ryb2tlPSIjRTg5NDNBIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjwvc3ZnPg==';
 
     TrelloPowerUp.initialize({
 
-      // ── 卡片右侧按钮（直接显示，不用点 Power-Up）──
       'card-buttons': function(t) {
         return [{
-          icon: 'https://cdn-icons-png.flaticon.com/512/833/833451.png',
+          icon: ICON,
           text: '工时打卡',
           callback: function(t) {
             return t.popup({
@@ -54,14 +54,13 @@
           var badges = [];
           Object.keys(byPerson).forEach(function(name) {
             var p = byPerson[name];
-            var shortName = name.split(' ')[0]; // 只取名字第一段
             if (p.active) {
-              badges.push({ text: '⏳ ' + shortName, color: 'yellow' });
+              badges.push({ text: '⏳ ' + name, color: 'yellow' });
             } else if (p.ms > 0) {
               var m = Math.floor(p.ms / 60000);
               var h = Math.floor(m / 60);
               var label = h > 0 ? h + 'h' + (m % 60 > 0 ? (m % 60) + 'm' : '') : m + 'm';
-              badges.push({ text: shortName + ' ' + label, color: 'blue' });
+              badges.push({ text: name + ' ' + label, color: 'blue' });
             }
           });
 
@@ -72,7 +71,7 @@
       // ── 看板顶部按钮（工时报表）──
       'board-buttons': function(t) {
         return [{
-          icon: 'https://cdn-icons-png.flaticon.com/512/833/833451.png',
+          icon: ICON,
           text: '工时报表',
           callback: function(t) {
             return t.popup({
