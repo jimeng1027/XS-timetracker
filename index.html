@@ -2,73 +2,68 @@
 <html lang="zh">
 <head>
   <meta charset="UTF-8">
-  <title>Time Tracker Power-Up</title>
+  <title>XIN Time Tracker</title>
   <script src="https://p.trellocdn.com/power-up.min.js"></script>
   <style>
-    body { margin: 0; font-family: sans-serif; background: #0052cc; color: white; display: flex; align-items: center; justify-content: center; height: 100vh; }
-    p { font-size: 14px; opacity: 0.8; }
+    body { margin: 0; font-family: sans-serif; background: #1B2E4B; color: white; display: flex; align-items: center; justify-content: center; height: 100vh; }
+    p { font-size: 14px; opacity: 0.7; }
   </style>
 </head>
 <body>
-  <p>Time Tracker Power-Up 已加载 ✓</p>
+  <p>XIN Time Tracker ✓</p>
   <script>
-    // ============================================================
-    // STORAGE KEY PREFIX
-    // ============================================================
-    const STORAGE_KEY = 'timetracker_records';
+    var STORAGE_KEY = 'timetracker_records_v2';
 
-    // ============================================================
-    // TRELLO POWER-UP INITIALIZATION
-    // ============================================================
     TrelloPowerUp.initialize({
 
-      // --- 卡片右侧按钮 ---
-      'card-buttons': function(t, options) {
+      // ── 卡片右侧按钮（直接显示，不用点 Power-Up）──
+      'card-buttons': function(t) {
         return [{
           icon: 'https://cdn-icons-png.flaticon.com/512/833/833451.png',
-          text: '打卡记录',
+          text: '工时打卡',
           callback: function(t) {
             return t.popup({
               title: '⏱ 工时打卡',
               url: './card-button.html',
-              height: 440,
+              height: 500,
             });
           }
         }];
       },
 
-      // --- 卡片徽章：显示今日已打卡状态 ---
-      'card-badges': function(t, options) {
-        return t.get('card', 'shared', STORAGE_KEY, []).then(function(records) {
-          const cardId = t.getContext().card;
-          const cardRecords = (records || []).filter(r => r.cardId === cardId);
-          const activeSession = cardRecords.find(r => !r.clockOut);
+      // ── 卡片徽章：打卡中 / 今日工时 ──
+      'card-badges': function(t) {
+        // 从 board shared storage 读取（与 card-button.html 一致）
+        return t.get('board', 'shared', STORAGE_KEY).then(function(records) {
+          records = records || [];
+          var cardId = t.getContext().card;
+          var cardRecords = records.filter(function(r) { return r.cardId === cardId; });
 
-          if (activeSession) {
-            return [{
-              text: '⏳ 打卡中',
-              color: 'green'
-            }];
+          // 是否有人正在打卡
+          var active = cardRecords.find(function(r) { return !r.clockOut; });
+          if (active) {
+            return [{ text: '⏳ 打卡中', color: 'green' }];
           }
 
-          // 计算今日总工时
-          const today = new Date().toDateString();
-          const todayMinutes = cardRecords
-            .filter(r => r.clockOut && new Date(r.clockIn).toDateString() === today)
-            .reduce((sum, r) => sum + Math.floor((r.clockOut - r.clockIn) / 60000), 0);
+          // 计算总工时（所有时间，不只今日）
+          var totalMs = cardRecords
+            .filter(function(r) { return r.clockOut; })
+            .reduce(function(sum, r) { return sum + (r.clockOut - r.clockIn); }, 0);
 
-          if (todayMinutes > 0) {
-            return [{
-              text: `今日 ${Math.floor(todayMinutes/60)}h${todayMinutes%60}m`,
-              color: 'blue'
-            }];
+          if (totalMs > 0) {
+            var totalMin = Math.floor(totalMs / 60000);
+            var h = Math.floor(totalMin / 60);
+            var m = totalMin % 60;
+            var label = h > 0 ? h + 'h' + (m > 0 ? m + 'm' : '') : m + 'm';
+            return [{ text: '⏱ ' + label, color: 'blue' }];
           }
+
           return [];
-        });
+        }).catch(function() { return []; });
       },
 
-      // --- 顶部菜单按钮（工时报表）---
-      'board-buttons': function(t, options) {
+      // ── 看板顶部按钮（工时报表）──
+      'board-buttons': function(t) {
         return [{
           icon: 'https://cdn-icons-png.flaticon.com/512/833/833451.png',
           text: '工时报表',
@@ -76,11 +71,12 @@
             return t.popup({
               title: '📊 工时报表',
               url: './reports.html',
-              height: 520,
+              height: 540,
             });
           }
         }];
       }
+
     });
   </script>
 </body>
