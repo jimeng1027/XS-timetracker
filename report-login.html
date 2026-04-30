@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>工时报表</title>
+  <script src="https://p.trellocdn.com/power-up.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#0e1822;--surface:#162030;--border:#253448;
+      --navy:#1B2E4B;--orange:#E8943A;--brown:#8B5E3C;
+      --cream:#F5ECD7;--text:#EEE8DC;--muted:#7A8FA6;
+      --mono:'Space Mono',monospace;--sans:'Noto Sans SC',sans-serif;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{background:var(--bg);color:var(--text);font-family:var(--sans);
+      display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:32px;width:100%;max-width:320px;text-align:center;}
+    .dots{display:flex;align-items:center;justify-content:center;gap:7px;margin-bottom:20px;}
+    .dot{width:10px;height:10px;border-radius:50%;}
+    .title{font-size:17px;font-weight:700;color:var(--cream);margin-bottom:6px;}
+    .sub{font-size:12px;color:var(--muted);margin-bottom:24px;}
+    .input{width:100%;background:var(--navy);border:1px solid var(--border);border-radius:8px;
+      padding:12px;color:var(--text);font-size:15px;font-family:var(--mono);
+      outline:none;text-align:center;letter-spacing:.15em;margin-bottom:12px;}
+    .input:focus{border-color:var(--orange);}
+    .btn{width:100%;padding:12px;background:var(--orange);color:#fff;border:none;
+      border-radius:8px;font-size:14px;font-weight:700;font-family:var(--sans);cursor:pointer;transition:all .15s;}
+    .btn:hover{filter:brightness(1.1);}
+    .error{font-size:11px;color:#ff6b6b;height:16px;margin-top:8px;font-family:var(--mono);}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="dots">
+      <div class="dot" style="background:#E8943A"></div>
+      <div class="dot" style="background:#1B2E4B;border:1px solid #2a4060"></div>
+      <div class="dot" style="background:#8B5E3C"></div>
+    </div>
+    <div class="title">工时报表</div>
+    <div class="sub">请输入密码</div>
+    <input class="input" type="password" id="pwd" placeholder="••••••••" onkeydown="if(event.key==='Enter')check()">
+    <button class="btn" onclick="check()">进入报表 →</button>
+    <div class="error" id="err"></div>
+  </div>
+<script>
+  // 在这里修改密码：
+  var PASSWORD = 'CHANGE_ME';
+  var REPORTS_URL = 'https://jimeng1027.github.io/XS-timetracker/reports.html';
+
+  function check(){
+    var v = document.getElementById('pwd').value;
+    if(v === PASSWORD){
+      // 把认证状态传给报表页
+      localStorage.setItem('xin_auth_token', btoa(PASSWORD + '_' + Date.now()));
+      window.open(REPORTS_URL, '_blank');
+      document.getElementById('err').textContent = '✓ 正在打开报表...';
+      document.getElementById('err').style.color = '#E8943A';
+    } else {
+      document.getElementById('err').textContent = '密码错误，请重试';
+      document.getElementById('pwd').value = '';
+    }
+  }
+</script>
+</body>
+</html>

@@ -316,8 +316,8 @@
 
 <script>
   // ── PASSWORD ─────────────────────────────────────────────
-  // 在这里修改密码：
-  var PASSWORD = 'Xinstudioxs2021';
+  // 在这里修改密码（要和 report-login.html 里的一致）：
+  var PASSWORD = 'CHANGE_ME';
 
   function checkPwd(){
     var v = document.getElementById('pwdInput').value;
@@ -334,13 +334,27 @@
 
   function logout(){
     sessionStorage.removeItem('xin_auth');
+    localStorage.removeItem('xin_auth_token');
     location.reload();
   }
 
-  // Check if already authenticated this session
-  if(sessionStorage.getItem('xin_auth')==='1'){
-    document.getElementById('lockScreen').style.display='none';
-    document.getElementById('mainApp').style.display='block';
+  // Check token from login page OR existing session
+  function isAuthed(){
+    if(sessionStorage.getItem('xin_auth')==='1') return true;
+    // Accept token set by report-login.html (valid for 5 mins)
+    var token = localStorage.getItem('xin_auth_token');
+    if(token){
+      try{
+        var decoded = atob(token);
+        var parts = decoded.split('_');
+        var ts = parseInt(parts[parts.length-1]);
+        if(Date.now()-ts < 5*60*1000){
+          sessionStorage.setItem('xin_auth','1');
+          return true;
+        }
+      }catch(e){}
+    }
+    return false;
   }
 
   // ── DATA ─────────────────────────────────────────────────
@@ -629,7 +643,11 @@
   function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
   // Auto-load if already authenticated
-  if(sessionStorage.getItem('xin_auth')==='1') loadData();
+  if(isAuthed()){
+    document.getElementById('lockScreen').style.display='none';
+    document.getElementById('mainApp').style.display='block';
+    loadData();
+  }
 </script>
 </body>
 </html>
