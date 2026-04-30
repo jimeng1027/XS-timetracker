@@ -110,10 +110,14 @@
     </div>
   </div>
 
-  <!-- 姓名 -->
+  <!-- 姓名（自动读取 Trello 登录账号，不可更改）-->
   <div style="margin-bottom:10px">
-    <div class="label">姓名</div>
-    <input type="text" id="nameInput" placeholder="输入姓名..." maxlength="20">
+    <div class="label">打卡人</div>
+    <div style="display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 10px;">
+      <div id="userAvatar" style="width:24px;height:24px;border-radius:50%;background:var(--orange);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0">?</div>
+      <span id="userNameDisplay" style="font-size:13px;font-weight:600;color:var(--cream);flex:1">载入中...</span>
+      <span style="font-size:10px;color:var(--muted)">🔒</span>
+    </div>
   </div>
 
   <div class="clock-display">
@@ -187,11 +191,14 @@
     try{await trelloInstance.set('board','shared',STORAGE_KEY,allRecords);}catch(e){}
   }
 
+  var currentUserName = '';
+
   async function init(){
     if(!isTrelloAvailable()){
       standaloneMode=true;
       cardName='Ocean waves';
       listName='FX dev list';
+      currentUserName='预览用户';
       var b=document.createElement('div');b.className='demo-banner';
       b.textContent='预览模式 — 使用浏览器本地存储';
       document.body.insertBefore(b,document.body.firstChild);
@@ -199,31 +206,29 @@
       trelloInstance=TrelloPowerUp.iframe();
       var ctx=trelloInstance.getContext();
       cardId=ctx.card;
-      // 获取卡片名和列表名
       var cardData=await trelloInstance.card('name','idList');
       cardName=cardData.name;
-      try {
+      try{
         var listData=await trelloInstance.list('name');
         listName=listData.name;
-      } catch(e){
-        listName='未知项目';
-      }
+      }catch(e){ listName='未知项目'; }
+      // 自动获取 Trello 登录用户名，不可更改
+      try{
+        var member=await trelloInstance.member('fullName','username');
+        currentUserName=member.fullName||member.username||'未知用户';
+      }catch(e){ currentUserName='未知用户'; }
     }
 
     document.getElementById('displayList').textContent = listName;
     document.getElementById('taskInput').value = cardName;
 
+    // 显示用户名和头像
+    var initials=currentUserName.split(' ').map(function(w){return w[0];}).join('').toUpperCase().slice(0,2);
+    document.getElementById('userAvatar').textContent=initials;
+    document.getElementById('userNameDisplay').textContent=currentUserName;
+
     allRecords=await loadRecords();
-    var saved=localStorage.getItem('tt_username')||'';
-    if(!saved && !standaloneMode){
-      try{
-        var member=await trelloInstance.member('fullName','username');
-        saved=member.fullName||member.username||'';
-        if(saved)localStorage.setItem('tt_username',saved);
-      }catch(e){}
-    }
-    document.getElementById('nameInput').value=saved;
-    if(saved)checkActiveSession(saved);
+    checkActiveSession(currentUserName);
 
     var now=new Date();
     document.getElementById('manualEnd').value=toLocal(now);
@@ -243,7 +248,7 @@
 
   function checkActiveSession(name){
     var a=allRecords.find(function(r){return r.cardId===cardId&&r.userName===name&&!r.clockOut;});
-    if(a){activeSession=a;document.getElementById('btnClockIn').disabled=true;document.getElementById('btnClockOut').disabled=false;document.getElementById('sessionPill').style.display='flex';startSessionTimer();setStatus('🟠 '+name+' 打卡中...');}
+    if(a){activeSession=a;document.getElementById('btnClockIn').disabled=true;document.getElementById('btnClockOut').disabled=false;document.getElementById('sessionPill').style.display='flex';startSessionTimer();setStatus('🟠 打卡中...');}
   }
 
   function switchMode(m){
@@ -255,15 +260,13 @@
   }
 
   async function clockIn(){
-    var name=document.getElementById('nameInput').value.trim();
     var task=document.getElementById('taskInput').value.trim()||cardName;
-    if(!name){setStatus('请先输入姓名！');return;}
-    if(allRecords.find(function(r){return r.cardId===cardId&&r.userName===name&&!r.clockOut;})){setStatus('你已经在打卡中，请先结束');return;}
-    localStorage.setItem('tt_username',name);
+    if(!currentUserName){setStatus('无法获取用户信息');return;}
+    if(allRecords.find(function(r){return r.cardId===cardId&&r.userName===currentUserName&&!r.clockOut;})){setStatus('你已经在打卡中，请先结束');return;}
     var s={
       id:Date.now()+'_'+Math.random().toString(36).substr(2,5),
       cardId:cardId, cardName:task, listName:listName,
-      userName:name, clockIn:Date.now(), clockOut:null, manual:false
+      userName:currentUserName, clockIn:Date.now(), clockOut:null, manual:false
     };
     allRecords.push(s);activeSession=s;
     await saveRecords();
@@ -282,20 +285,18 @@
   }
 
   async function saveManual(){
-    var name=document.getElementById('nameInput').value.trim();
     var task=document.getElementById('taskInput').value.trim()||cardName;
     var sv=document.getElementById('manualStart').value;
     var ev=document.getElementById('manualEnd').value;
-    if(!name){setStatusM('请先输入姓名！');return;}
+    if(!currentUserName){setStatusM('无法获取用户信息');return;}
     if(!sv||!ev){setStatusM('请填写开始和结束时间');return;}
     var st=new Date(sv).getTime(),et=new Date(ev).getTime();
     if(et<=st){setStatusM('结束时间必须晚于开始时间');return;}
     if(et>Date.now()){setStatusM('结束时间不能是未来');return;}
-    localStorage.setItem('tt_username',name);
     allRecords.push({
       id:'m_'+Date.now()+'_'+Math.random().toString(36).substr(2,5),
       cardId:cardId, cardName:task, listName:listName,
-      userName:name, clockIn:st, clockOut:et, manual:true
+      userName:currentUserName, clockIn:st, clockOut:et, manual:true
     });
     await saveRecords();
     setStatusM('✓ 补卡已保存');renderTodayRecords();
@@ -320,11 +321,10 @@
   }
 
   function renderTodayRecords(){
-    var me=document.getElementById('nameInput').value.trim();
     var today=new Date().toDateString();
     var recs=allRecords.filter(function(r){
       if(new Date(r.clockIn).toDateString()!==today)return false;
-      if(todayFilter==='me'&&r.userName!==me)return false;
+      if(todayFilter==='me'&&r.userName!==currentUserName)return false;
       return true;
     }).sort(function(a,b){return b.clockIn-a.clockIn;});
     var c=document.getElementById('recordsList');
