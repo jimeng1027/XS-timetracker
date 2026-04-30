@@ -85,17 +85,15 @@
     cardName = cardData.name;
     try { var ld = await t.list('name'); listName = ld.name; } catch(e) { listName = ''; }
 
-    // 获取当前 Trello 登录用户名
-    try {
-      var member = await t.member('fullName', 'username', 'avatarColor');
-      currentUserName = member.fullName || member.username || '';
-      if (currentUserName) {
-        localStorage.setItem('tt_username', currentUserName);
-      }
-      if (member.avatarColor) {
-        document.getElementById('currentAvatar').style.background = member.avatarColor;
-      }
-    } catch(e) {
+    // 从 URL 参数读取用户名（由 index.html 传入）
+    var urlParams = new URLSearchParams(window.location.search);
+    var memberName = urlParams.get('memberName') || '';
+
+    // 如果 URL 有名字就用，否则用本地存储
+    if (memberName) {
+      currentUserName = memberName;
+      localStorage.setItem('tt_username', memberName);
+    } else {
       currentUserName = localStorage.getItem('tt_username') || '未知用户';
     }
 

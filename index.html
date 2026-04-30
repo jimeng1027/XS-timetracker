@@ -17,13 +17,14 @@
     TrelloPowerUp.initialize({
 
       'card-back-section': function(t) {
-        return t.member('fullName', 'username', 'avatarColor').then(function(member) {
+        return t.member('fullName', 'username').then(function(member) {
+          var name = member.fullName || member.username || '';
           return {
             title: '工时追踪',
             icon: 'https://raw.githubusercontent.com/jimeng1027/XS-timetracker/main/icon.png',
             content: {
               type: 'iframe',
-              url: t.signUrl('./card-back.html'),
+              url: t.signUrl('./card-back.html', { memberName: name }),
               height: 220,
             }
           };
