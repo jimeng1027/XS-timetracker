@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>工时打卡</title>
+  <script src="https://p.trellocdn.com/power-up.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --orange:#E8943A; --navy:#1B2E4B; --brown:#8B5E3C;
+      --cream:#F5ECD7; --muted:#7A8FA6; --border:#d0d8e0;
+      --surface:#f8f9fa; --text:#172b4d;
+      --mono:'Space Mono',monospace; --sans:'Noto Sans SC',sans-serif;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:var(--sans);font-size:13px;color:var(--text);background:transparent;padding:4px 0;}
+
+    .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+    .title{display:flex;align-items:center;gap:7px;font-weight:700;font-size:13px;color:var(--text);}
+    .title-icon{width:16px;height:16px;background:var(--orange);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;flex-shrink:0;}
+
+    .total-row{display:flex;align-items:center;gap:12px;margin-bottom:10px;font-size:12px;color:#5e6c84;}
+    .total-val{font-family:var(--mono);font-weight:700;color:var(--text);}
+
+    /* Person rows */
+    .person-row{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border);}
+    .person-row:last-child{border-bottom:none;}
+    .avatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;}
+    .person-info{flex:1;}
+    .person-name{font-weight:600;font-size:12px;color:var(--text);}
+    .person-time{font-family:var(--mono);font-size:11px;color:var(--muted);}
+    .person-hours{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--text);margin-left:auto;}
+    .active-dot{width:7px;height:7px;border-radius:50%;background:var(--orange);animation:pulse 1.5s infinite;margin-left:6px;flex-shrink:0;}
+    @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(1.3)}}
+
+    /* Name input + clock in area */
+    .clockin-area{margin-top:10px;display:flex;gap:8px;align-items:center;}
+    .name-input{flex:1;border:1px solid var(--border);border-radius:4px;padding:6px 8px;font-family:var(--sans);font-size:12px;color:var(--text);outline:none;background:#fff;}
+    .name-input:focus{border-color:var(--orange);}
+
+    .btn-start{padding:6px 14px;background:var(--orange);color:#fff;border:none;border-radius:4px;font-family:var(--sans);font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap;}
+    .btn-start:hover{filter:brightness(1.1);}
+    .btn-stop{padding:6px 14px;background:var(--brown);color:#fff;border:none;border-radius:4px;font-family:var(--sans);font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap;}
+    .btn-stop:hover{filter:brightness(1.1);}
+
+    .empty-state{color:var(--muted);font-size:12px;padding:4px 0 8px;}
+
+    .status-msg{font-size:11px;color:var(--orange);height:14px;margin-top:4px;font-family:var(--mono);}
+
+    /* Colors for avatars */
+    .av0{background:#E8943A;} .av1{background:#1B2E4B;} .av2{background:#8B5E3C;}
+    .av3{background:#5a7fa0;} .av4{background:#4a9e7a;} .av5{background:#9b59b6;}
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="title">
+      <div class="title-icon">⏱</div>
+      <span>工时追踪</span>
+    </div>
+    <div class="total-row">
+      <span>总计：<span class="total-val" id="totalHours">0h</span></span>
+    </div>
+  </div>
+
+  <div id="personList"><div class="empty-state">暂无打卡记录</div></div>
+
+  <div class="clockin-area">
+    <input class="name-input" type="text" id="nameInput" placeholder="输入姓名开始打卡...">
+    <button class="btn-start" id="btnStart" onclick="handleBtn()">开始</button>
+  </div>
+  <div class="status-msg" id="statusMsg"></div>
+
+<script>
+  var STORAGE_KEY = 'timetracker_records_v2';
+  var t = TrelloPowerUp.iframe();
+  var cardId, cardName, listName;
+  var allRecords = [];
+  var activeSession = null;
+  var timerInterval = null;
+  var AVATAR_COLORS = ['av0','av1','av2','av3','av4','av5'];
+
+  async function init() {
+    var ctx = t.getContext();
+    cardId = ctx.card;
+    var cardData = await t.card('name');
+    cardName = cardData.name;
+    try { var ld = await t.list('name'); listName = ld.name; } catch(e) { listName = ''; }
+
+    var saved = localStorage.getItem('tt_username') || '';
+    document.getElementById('nameInput').value = saved;
+
+    allRecords = (await t.get('board', 'shared', STORAGE_KEY)) || [];
+    checkActiveSession(saved);
+    render();
+
+    // Auto-resize
+    t.sizeTo('#root').catch(function(){});
+  }
+
+  function checkActiveSession(name) {
+    if (!name) return;
+    var a = allRecords.find(function(r) {
+      return r.cardId === cardId && r.userName === name && !r.clockOut;
+    });
+    if (a) {
+      activeSession = a;
+      document.getElementById('btnStart').textContent = '结束';
+      document.getElementById('btnStart').className = 'btn-stop';
+    }
+  }
+
+  async function handleBtn() {
+    var name = document.getElementById('nameInput').value.trim();
+    if (!name) { setStatus('请输入姓名'); return; }
+
+    var myActive = allRecords.find(function(r) {
+      return r.cardId === cardId && r.userName === name && !r.clockOut;
+    });
+
+    if (myActive) {
+      // Clock out
+      myActive.clockOut = Date.now();
+      activeSession = null;
+      document.getElementById('btnStart').textContent = '开始';
+      document.getElementById('btnStart').className = 'btn-start';
+      setStatus('✓ 打卡结束');
+    } else {
+      // Clock in
+      var s = {
+        id: Date.now() + '_' + Math.random().toString(36).substr(2,5),
+        cardId: cardId, cardName: cardName, listName: listName,
+        userName: name, clockIn: Date.now(), clockOut: null, manual: false
+      };
+      allRecords.push(s);
+      activeSession = s;
+      localStorage.setItem('tt_username', name);
+      document.getElementById('btnStart').textContent = '结束';
+      document.getElementById('btnStart').className = 'btn-stop';
+      setStatus('✓ 打卡开始');
+    }
+
+    await save();
+    render();
+    t.sizeTo('#root').catch(function(){});
+  }
+
+  async function save() {
+    var cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    allRecords = allRecords.filter(function(r) { return r.clockIn > cutoff; });
+    await t.set('board', 'shared', STORAGE_KEY, allRecords);
+  }
+
+  function render() {
+    var cardRecs = allRecords.filter(function(r) { return r.cardId === cardId; });
+
+    // Group by person
+    var byPerson = {};
+    var personOrder = [];
+    cardRecs.forEach(function(r) {
+      if (!byPerson[r.userName]) { byPerson[r.userName] = { ms: 0, active: false, lastIn: 0 }; personOrder.push(r.userName); }
+      if (!r.clockOut) {
+        byPerson[r.userName].active = true;
+        byPerson[r.userName].lastIn = r.clockIn;
+      } else {
+        byPerson[r.userName].ms += (r.clockOut - r.clockIn);
+      }
+    });
+
+    // Remove duplicates
+    personOrder = personOrder.filter(function(v,i){ return personOrder.indexOf(v)===i; });
+
+    var totalMs = Object.values(byPerson).reduce(function(s,p){ return s + p.ms; }, 0);
+    document.getElementById('totalHours').textContent = fmtH(totalMs);
+
+    if (!personOrder.length) {
+      document.getElementById('personList').innerHTML = '<div class="empty-state">暂无打卡记录</div>';
+      return;
+    }
+
+    document.getElementById('personList').innerHTML = personOrder.map(function(name, i) {
+      var p = byPerson[name];
+      var initials = name.split(' ').map(function(w){ return w[0]; }).join('').toUpperCase().slice(0,2);
+      var colorCls = AVATAR_COLORS[i % AVATAR_COLORS.length];
+      var hoursLabel = p.active ? '进行中' : fmtH(p.ms);
+      var activeDot = p.active ? '<div class="active-dot"></div>' : '';
+      return '<div class="person-row">'
+        + '<div class="avatar ' + colorCls + '">' + initials + '</div>'
+        + '<div class="person-info"><div class="person-name">' + esc(name) + '</div></div>'
+        + activeDot
+        + '<div class="person-hours">' + hoursLabel + '</div>'
+        + '</div>';
+    }).join('');
+  }
+
+  function fmtH(ms) {
+    var m = Math.floor(ms / 60000), h = Math.floor(m / 60);
+    return h > 0 ? h + 'h ' + (m % 60) + 'm' : m + 'm';
+  }
+  function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function setStatus(msg){ var el=document.getElementById('statusMsg'); el.textContent=msg; setTimeout(function(){if(el.textContent===msg)el.textContent='';},3000); }
+
+  init();
+</script>
+<div id="root"></div>
+</body>
+</html>
