@@ -77,6 +77,8 @@
   var AVATAR_COLORS = ['av0','av1','av2','av3','av4','av5'];
 
   var currentUserName = '';
+  var currentAvatarColor = '#E8943A';
+  var TRELLO_COLORS = {'blue':'#0079BF','blue_dark':'#055A8C','green':'#519839','green_dark':'#2D6A2D','orange':'#D29034','orange_dark':'#C8610A','red':'#B04632','red_dark':'#89343B','purple':'#89609E','purple_dark':'#5C3B7A','pink':'#CD5A91','pink_dark':'#8E2B6E','sky':'#23AAC5','lime':'#4BBF6B','black':'#344563','grey':'#838C91','yellow':'#D9B51C'};
 
   async function init() {
     var ctx = t.getContext();
@@ -103,9 +105,17 @@
     // 清除旧的错误缓存，防止历史脏数据
     try { localStorage.removeItem('tt_username'); } catch(e) {}
 
-    // 显示当前用户
+    // 获取 Trello 头像颜色
+    try {
+      var memberColor = await t.member('avatarColor');
+      currentAvatarColor = TRELLO_COLORS[memberColor.avatarColor] || '#E8943A';
+    } catch(e) {}
+
+    // 显示当前用户 + 真实头像颜色
     var initials = currentUserName.split(' ').map(function(w){return w[0];}).join('').toUpperCase().slice(0,2);
-    document.getElementById('currentAvatar').textContent = initials;
+    var avatarEl = document.getElementById('currentAvatar');
+    avatarEl.textContent = initials;
+    avatarEl.style.background = currentAvatarColor;
     document.getElementById('currentUserName').textContent = currentUserName;
 
     allRecords = (await t.get('board', 'shared', STORAGE_KEY)) || [];
@@ -195,8 +205,8 @@
       var initials = name.split(' ').map(function(w){ return w[0]; }).join('').toUpperCase().slice(0,2);
       var colorCls = AVATAR_COLORS[i % AVATAR_COLORS.length];
       // 如果是当前用户，用 Trello 头像颜色
-      var avatarStyle = (name === currentUserName && document.getElementById('currentAvatar'))
-        ? 'style="background:' + document.getElementById('currentAvatar').style.background + '"'
+      var avatarStyle = name === currentUserName
+        ? 'style="background:' + currentAvatarColor + '"'
         : '';
       var hoursLabel = p.active ? '进行中' : fmtH(p.ms);
       var activeDot = p.active ? '<div class="active-dot"></div>' : '';
