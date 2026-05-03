@@ -78,7 +78,12 @@
 
   var currentUserName = '';
   var currentAvatarColor = '#E8943A';
-  var TRELLO_COLORS = {'blue':'#0079BF','blue_dark':'#055A8C','green':'#519839','green_dark':'#2D6A2D','orange':'#D29034','orange_dark':'#C8610A','red':'#B04632','red_dark':'#89343B','purple':'#89609E','purple_dark':'#5C3B7A','pink':'#CD5A91','pink_dark':'#8E2B6E','sky':'#23AAC5','lime':'#4BBF6B','black':'#344563','grey':'#838C91','yellow':'#D9B51C'};
+  var TRELLO_COLORS = {
+    'blue':'#0079BF','blue_dark':'#055A8C','green':'#519839','green_dark':'#2D6A2D',
+    'orange':'#D29034','orange_dark':'#C8610A','red':'#B04632','red_dark':'#89343B',
+    'purple':'#89609E','purple_dark':'#5C3B7A','pink':'#CD5A91','pink_dark':'#8E2B6E',
+    'sky':'#23AAC5','lime':'#4BBF6B','black':'#344563','grey':'#838C91','yellow':'#D9B51C'
+  };
 
   async function init() {
     var ctx = t.getContext();
@@ -87,14 +92,14 @@
     cardName = cardData.name;
     try { var ld = await t.list('name'); listName = ld.name; } catch(e) { listName = ''; }
 
-    // 优先从 URL 参数读取（由 index.html 通过 signUrl 传入）
+    // 从 URL 参数读取用户名和头像颜色（由 index.html 通过 signUrl 传入）
     var urlParams = new URLSearchParams(window.location.search);
     var memberName = urlParams.get('memberName') || '';
+    var avatarColorParam = urlParams.get('avatarColor') || '';
 
     if (memberName) {
       currentUserName = memberName;
     } else {
-      // 兜底：直接从 Trello API 获取，永远不用 localStorage
       try {
         var member = await t.member('fullName', 'username');
         currentUserName = member.fullName || member.username || '未知用户';
@@ -102,16 +107,16 @@
         currentUserName = '未知用户';
       }
     }
-    // 清除旧的错误缓存，防止历史脏数据
+
+    // 应用头像颜色（URL 参数优先，否则 fallback 橙色）
+    if (avatarColorParam && TRELLO_COLORS[avatarColorParam]) {
+      currentAvatarColor = TRELLO_COLORS[avatarColorParam];
+    }
+
+    // 清除旧的错误缓存
     try { localStorage.removeItem('tt_username'); } catch(e) {}
 
-    // 获取 Trello 头像颜色
-    try {
-      var memberColor = await t.member('avatarColor');
-      currentAvatarColor = TRELLO_COLORS[memberColor.avatarColor] || '#E8943A';
-    } catch(e) {}
-
-    // 显示当前用户 + 真实头像颜色
+    // 显示当前用户头像
     var initials = currentUserName.split(' ').map(function(w){return w[0];}).join('').toUpperCase().slice(0,2);
     var avatarEl = document.getElementById('currentAvatar');
     avatarEl.textContent = initials;
@@ -203,15 +208,13 @@
     document.getElementById('personList').innerHTML = personOrder.map(function(name, i) {
       var p = byPerson[name];
       var initials = name.split(' ').map(function(w){ return w[0]; }).join('').toUpperCase().slice(0,2);
-      var colorCls = AVATAR_COLORS[i % AVATAR_COLORS.length];
-      // 如果是当前用户，用 Trello 头像颜色
-      var avatarStyle = name === currentUserName
-        ? 'style="background:' + currentAvatarColor + '"'
-        : '';
+      var isMe = name === currentUserName;
+      var avatarStyle = isMe ? 'style="background:' + currentAvatarColor + '"' : '';
+      var colorCls = isMe ? '' : AVATAR_COLORS[i % AVATAR_COLORS.length];
       var hoursLabel = p.active ? '进行中' : fmtH(p.ms);
       var activeDot = p.active ? '<div class="active-dot"></div>' : '';
       return '<div class="person-row">'
-        + '<div class="avatar ' + (avatarStyle ? '' : colorCls) + '" ' + avatarStyle + '>' + initials + '</div>'
+        + '<div class="avatar ' + colorCls + '" ' + avatarStyle + '>' + initials + '</div>'
         + '<div class="person-info"><div class="person-name">' + esc(name) + '</div></div>'
         + activeDot
         + '<div class="person-hours">' + hoursLabel + '</div>'
